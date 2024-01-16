@@ -24,3 +24,5 @@ startTime = '202301215' + '000000' + '00000'  #YYYYMMDD + HHMMSS + 00000
 
 path_newsList = './newsList'
 path_comment = './comment'
+
+number_of_process = 16
