@@ -2,7 +2,6 @@ from config import *
 
 import requests
 import json
-from bs4 import BeautifulSoup
 from multiprocessing import Process
 import os
 
@@ -11,6 +10,8 @@ import os
 def init():
     if not os.path.isdir(path_newsList):
         os.makedirs(path_newsList)
+    if not os.path.isdir(path_comment):
+        os.makedirs(path_comment)
 
 
 
@@ -24,7 +25,12 @@ def newsListDownloader(channelName, _categoryURL):
 
     while True:
         #request로 데이터 받아오기
-        response = requests.get(categoryURL)
+        try:
+            response = requests.get(categoryURL, timeout=10)
+        except:
+            print('Time out from requests.get(): ', categoryURL)
+            continue
+
         if response.status_code != 200:
             return
         
@@ -47,30 +53,58 @@ def newsListDownloader(channelName, _categoryURL):
 #https://blog.naver.com/seodaeho91/221273565367
 def newsCommentsDownloader(newsURLs):
     for url in newsURLs:
+        comments = []
+        
         oid = url.split('/')[-2]
         aid = url.split('/')[-1]
-        page = 1
-        #apiURL = "https://apis.naver.com/commentBox/cbox/web_neo_list_jsonp.json?ticket=news&templateId=default_society&pool=cbox5&_callback=jQuery1707138182064460843_1523512042464&lang=ko&country=&objectId=news"+oid+"%2C"+aid+"&categoryId=&pageSize=20&indexSize=10&groupId=&listType=OBJECT&pageType=more&page="+str(page)+"&refresh=false&sort=FAVORITE"
-        apiURL = 'https://apis.naver.com/commentBox/cbox/web_neo_list_jsonp.json?ticket=news&templateId=default_economy&pool=cbox5&_callback=jQuery33107462323356263885_1705410942353&lang=ko&country=KR&objectId=news'+oid+'%2C'+aid+'&pageSize=400&indexSize=10&pageType=more&page='+str(page)+'&sort=new'
+
+        #첫페이지 받아오기
         headers = {
             'Referer': url,
             "User-agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36"
         }
-
-        response = requests.get(apiURL, headers=headers)
+        apiURL = 'https://apis.naver.com/commentBox/cbox/web_naver_list_jsonp.json?ticket=news&templateId=default_economy&pool=cbox5&_cv=20240116144725&_callback=jQuery331023416264284422983_1705575101314&lang=ko&country=KR&objectId=news'+oid+'%2C'+aid+'&categoryId=&pageSize=20&indexSize=10&groupId=&listType=OBJECT&pageType=more&page=1&initialize=true&followSize=5&userType=&useAltSort=true&replyPageSize=20&sort=reply&includeAllStatus=true&_=1705575101316'
+        try:
+            response = requests.get(apiURL, headers=headers, timeout=10)
+        except:
+            print('Time out from requests.get(): ', apiURL)
+            continue
         if response.status_code != 200:
             return
-        soup = BeautifulSoup(response.text, 'html.parser')
-        print(soup)
-        #print(response.request.headers)
+        
+        startIdx = response.text.find('{')
+        resDict = json.loads(response.text[startIdx:-2])
+        comments.append(resDict['result']['commentList'])
 
+        for page in range(2, resDict['result']['pageModel']['totalPages']+1):
+            apiURL = 'https://apis.naver.com/commentBox/cbox/web_naver_list_jsonp.json?ticket=news&templateId=default_economy&pool=cbox5&_cv=20240116144725&_callback=jQuery331023416264284422983_1705575101314&lang=ko&country=KR&objectId=news'+oid+'%2C'+aid+'&categoryId=&pageSize=20&indexSize=10&groupId=&listType=OBJECT&pageType=more&page='+str(page)+'&currentPage='+str(page-1)+'&refresh=false&sort=REPLY&current=814607337766518790&prev=814571801492324559&moreParam.direction=next&moreParam.prev='+str(resDict['result']['morePage']['prev'])+'&moreParam.next='+str(resDict['result']['morePage']['next'])+'&includeAllStatus=true&_=1705575101318'
+            try:
+                response = requests.get(apiURL, headers=headers, timeout=10)
+            except:
+                print('Time out from requests.get(): ', apiURL)
+                continue
+            if response.status_code != 200:
+                return
+        
+            startIdx = response.text.find('{')
+            resDict = json.loads(response.text[startIdx:-2])
+            comments.append(resDict['result']['commentList'])
+        
+        f = open(path_comment+'/'+oid+'_'+aid, 'w', encoding="UTF-8-sig")
+        json.dump(comments, f, ensure_ascii=False)
+#        f.write(str(comments))
+        f.close()
+        print(comments)
+        
+        
 
 def main():
     init()
 
-    newsCommentsDownloader(['https://n.news.naver.com/article/comment/001/0014445643'])
+    newsCommentsDownloader(['https://n.news.naver.com/article/001/0014453875'])
 
     return
+
 
     '''
     #downlaod new news URLS of channels
@@ -96,7 +130,7 @@ def main():
             f = open(path, 'r')
             lines = f.readlines()
             for line in lines:
-                toDownloadNewsURLs.append(line.replace('/article', '/article/comment').rstrip('\n'))
+                toDownloadNewsURLs.append(line.rstrip('\n'))
     
     processes =[]
     for i in range(number_of_process):
