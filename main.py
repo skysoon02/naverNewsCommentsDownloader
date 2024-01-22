@@ -4,6 +4,7 @@ import requests
 import json
 from multiprocessing import Process
 import os
+from bs4 import BeautifulSoup
 
 
 
@@ -12,6 +13,27 @@ def init():
         os.makedirs(path_newsList)
     if not os.path.isdir(path_comment):
         os.makedirs(path_comment)
+
+
+def titleToURL(title):
+    queryURL = 'https://search.naver.com/search.naver?where=video&sm=tab_jum&query=' + title
+    try:
+        response = requests.get(queryURL, timeout=10)
+    except:
+        print('Time out from requests.get(): ', queryURL)
+        return
+
+    soup = BeautifulSoup(response.text, 'html.parser')
+    videoHTML = soup.find('a', string = '네이버 뉴스').find_parent('li')
+    videoURL = videoHTML.find(class_='thumb_area').find('a').get('href')
+    print(videoURL)
+
+    oidIndex = videoURL.find('oid')+4
+    aidIndex = videoURL.find('aid')+4
+
+    return 'https://n.news.naver.com/article/' + videoURL[oidIndex: oidIndex+3] + '/' + videoURL[aidIndex:]
+    
+    print(a)
 
 
 
@@ -100,15 +122,17 @@ def newsCommentsDownloader(newsURLs):
 
 def main():
     init()
+    URL = titleToURL("을씨년스런 분위기...줄폐업에 자영업자들 '곡소리'")
+    
 
-    newsCommentsDownloader(['https://n.news.naver.com/article/001/0014453875'])
+    newsCommentsDownloader([URL])
 
     return
 
 
     '''
     #downlaod new news URLS of channels
-    processes =[]
+    processes = []
     for channel in targetChannelList:                       #각 채널에서
         print(channel)
         for categoryURL in channel['categories']:           #채널의 각 카테고리에서
