@@ -1,3 +1,5 @@
-# 사용법
+# Naver News Comments Downloader
+
+## 사용법
 
 newsTitle 폴더에 {뉴스 이름}\t{채널} 형식으로 이루어진 파일들을 넣어서 main.py 실행
