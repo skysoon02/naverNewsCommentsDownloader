@@ -8,7 +8,7 @@ import json
 
 #채널 URL을 입력 받아서 최신 뉴스 300개의 URL을 가져와 파일로 저장하는 함수
 #input channel example: https://media.naver.com/newsflash/001/ElectionNation
-def newsListDownloader(channelName, _categoryURL):
+def newsListDownloader_by_category(channelName, _categoryURL):
     path = path_newsURL + '/newsList_' + channelName + '_' + _categoryURL.split('/')[-1]
     print(path)
     f = open(path, 'w')
@@ -41,14 +41,24 @@ def newsListDownloader(channelName, _categoryURL):
     return
 
 
-#new의 title을 입력 받아서 전처리 후 
-def newsURLDownloader(news):
-    title = news[0]
-    channelID = news[1]
-    if titleFilter(title, channelID)==True:
-        beautifiedTitle = titleBeautifier(title)
-        return titleToURL(beautifiedTitle, channelID)
-    return None
+
+def newsListDownloader_by_title(title):
+    queryURL = 'https://search.naver.com/search.naver?where=news&sm=tab_jum&query=' + title
+    try:
+        response = requests.get(queryURL, timeout=10)
+    except:
+        print('Time out from requests.get(): ', queryURL)
+        return []
+
+    soup = BeautifulSoup(response.text, 'html.parser')
+    searchResultHTML = soup.find_all('div', class_ = 'info_group') 
+    
+    return searchResultHTML
+
+
+
+
+
 
 
 

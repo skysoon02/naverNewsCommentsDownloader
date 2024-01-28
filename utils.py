@@ -1,5 +1,6 @@
 from config import *
 from predefined import *
+from downloaders import *
 
 import requests
 from bs4 import BeautifulSoup
@@ -81,29 +82,15 @@ def titleBeautifier(title0):
     
 
 
-#네이버 뉴스의 title을 입력 받아서 해당하는 URL을 반환
+#네이버 뉴스의 title을 입력 받아서 해당 뉴스의 URL을 반환
 #input title example: 대통령실 사퇴 요구에 한동훈 비대위원장이 직접 밝힌 입장
 #return title example: 
-def titleToURL(title, channelID):
-    queryURL = 'https://search.naver.com/search.naver?where=news&sm=tab_jum&query=' + '"' + title + '"'
-    try:
-        response = requests.get(queryURL, timeout=10)
-    except:
-        print('Time out from requests.get(): ', queryURL)
-        return
-
-    soup = BeautifulSoup(response.text, 'html.parser')
-    videosHTML = soup.find_all('div', class_ = 'info_group') 
-    if videosHTML == []:    #검색 결과가 하나도 없는 경우
-        print('Fail to download: ', title)
-        return
-
+def getPreciseNews(searchResultHTMLs, title, channelID):
     videoURLs = []
     channelName = channelIDToName[channelID]
-    #print(videosHTML)
-    for videoHTML in videosHTML:
-        if channelName in videoHTML.contents[1].contents and '네이버뉴스' in videoHTML.contents[3].contents:
-            videoURLs.append(videoHTML.contents[3].get('href'))
+    for searchResultHTML in searchResultHTMLs:
+        if channelName in searchResultHTML.contents[1].contents and '네이버뉴스' in searchResultHTML.contents[3].contents:
+            videoURLs.append(searchResultHTML.contents[3].get('href'))
 
     if len(videoURLs) != 1: #일치하는 검색 결과가 정확히 한 개가 아닌 경우
         print('There is not exactly one result:', len(videoURLs))
@@ -114,4 +101,25 @@ def titleToURL(title, channelID):
     aidIndex = videoURL.find('aid')+4
 
     return 'https://n.news.naver.com/article/' + videoURL[oidIndex: oidIndex+3] + '/' + videoURL[aidIndex:]
+
+
+#네이버 뉴스의 title을 입력 받아서 네이버에 검색되는 네이버 뉴스의 URL들을 반환
+def getSeveralNewses(searchResultHTMLs, title, number_of_news):
+    videoURLs = []
+    for searchResultHTML in searchResultHTMLs:
+        if '네이버뉴스' in searchResultHTML.contents[3].contents:
+            videoURLs.append(searchResultHTML.contents[3].get('href'))
+
+    if len(videoURLs) != 1: #일치하는 검색 결과가 정확히 한 개가 아닌 경우
+        print('There is not exactly one result:', len(videoURLs))
+        return
+    
+    returnURLs = []
+    for videoURL in videoURLs:
+        videoURL_ = videoURL.split('?')[0]   #'?sid=' 제거
+        oidIndex = videoURL_.find('oid')+4
+        aidIndex = videoURL_.find('aid')+4
+        returnURLs.append('https://n.news.naver.com/article/' + videoURL_[oidIndex: oidIndex+3] + '/' + videoURL_[aidIndex:])
+
+    return returnURLs
 
