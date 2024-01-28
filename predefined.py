@@ -1,4 +1,3 @@
-
 startTime = '202301215' + '000000' + '00000'  #YYYYMMDD + HHMMSS + 00000
 
 
@@ -56,9 +55,11 @@ targetChannelList = [
     }
 ]
 
+
 channelNameToID = {
     'YTN':1, 'SBS':55, 'KBS':56, 'MBC':214, 'JTBC':437, 'TV조선':448, '채널A':449 
 }
+
 
 channelIDToName = {
     1:'YTN', 55:'SBS', 56:'KBS', 214:'MBC', 437:'JTBC', 448:'TV조선', 449:'채널A' 
