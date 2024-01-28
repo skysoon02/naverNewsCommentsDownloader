@@ -1,5 +1,6 @@
 #python
 /__pycache__
 
-/newsList
-/comment
+#/comment
+#/newsTitle
+#/newsURL

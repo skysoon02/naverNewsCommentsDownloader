@@ -61,8 +61,7 @@ def serachNaverNews(title):
 #네이버 뉴스의 title을 입력 받아서 해당 뉴스의 URL을 반환
 #input title example: 대통령실 사퇴 요구에 한동훈 비대위원장이 직접 밝힌 입장
 #return title example: 
-#
-def getNewsURL(title, channelID):
+def searchParticularNews(title, channelID):
     queryURL = 'https://search.naver.com/search.naver?where=news&sm=tab_jum&query=' + title
     try:
         response = requests.get(queryURL, timeout=10)
@@ -94,7 +93,7 @@ def getNewsURL(title, channelID):
 
 
 #네이버 뉴스의 title을 입력 받아서 네이버에 검색되는 네이버 뉴스의 URL들을 반환
-def getSeveralNewses(title, number_of_news):
+def searchSeveralNewses(title, number_of_news):
     newsURLs = []   #반환할 URL을 저장하는 변수
     page=1          #요청할 네이버 검색 결과의 페이지
     while True:
@@ -140,6 +139,7 @@ def downloadNewsComments(newsURL):
     if response.status_code != 200:
         return
     
+    #내용을 감싸는 jQuery~함수 부분 제거
     startIdx = response.text.find('{')
     resDict = json.loads(response.text[startIdx:-2])
     comments.append(resDict['result']['commentList'])
@@ -161,3 +161,25 @@ def downloadNewsComments(newsURL):
     f = open(path_comment+'/'+oid+'_'+aid, 'w', encoding="UTF-8-sig")
     json.dump(comments, f, ensure_ascii=False)
     f.close()
+
+
+def downloadNewsContent(newsURL):
+    try:
+        response = requests.get(newsURL, timeout=10)
+    except:
+        print('Time out from requests.get(): ', newsURL)
+        return
+    
+    soup = BeautifulSoup(response.text, 'html.parser')
+    print(soup.select_one('#title_area > span'))    #제목
+    print(soup.select_one('#dic_area')) #본문(사진 포함)
+    
+    if soup.select_one('#contents > div._VOD_PLAYER_WRAP') != None: #영상이 있는 경우 영상 주소 반환
+        videoKey = soup.select_one('#contents > div._VOD_PLAYER_WRAP').get('data-inkey')
+        apiURL = 'https://apis.naver.com/rmcnmv/rmcnmv/vod/play/v2.0/ED5B61A25414EDC8495C57707F7CE007402B?key=' + videoKey + '&sid=2006&pid=51d65d91-8641-4c35-9d8f-1ad4bedd9b93&nonce=1706446614203&devt=HTML5_PC&prv=N&aup=N&stpb=N&cpl=ko_KR&env=real&lc=ko_KR&adi=%5B%7B%22adSystem%22%3A%22null%22%7D%5D&adu=%2F'
+        try:
+            response = requests.get(apiURL, timeout=10)
+        except:
+            print('Time out from requests.get(): ', apiURL)
+            return
+        print(json.loads(response.text)['meta']['url'])
