@@ -62,7 +62,7 @@ def serachNaverNews(title):
 #input title example: 대통령실 사퇴 요구에 한동훈 비대위원장이 직접 밝힌 입장
 #return title example: 
 def searchParticularNews(title, channelID):
-    queryURL = 'https://search.naver.com/search.naver?where=news&sm=tab_jum&query=' + title
+    queryURL = 'https://search.naver.com/search.naver?where=news&sm=tab_jum&query=' + '"' + title + '"' 
     try:
         response = requests.get(queryURL, timeout=10)
     except:
@@ -95,9 +95,10 @@ def searchParticularNews(title, channelID):
 #네이버 뉴스의 title을 입력 받아서 네이버에 검색되는 네이버 뉴스의 URL들을 반환
 def searchSeveralNewses(title, number_of_news):
     newsURLs = []   #반환할 URL을 저장하는 변수
-    page=1          #요청할 네이버 검색 결과의 페이지
+    page=0          #요청할 네이버 검색 결과의 페이지
     while True:
         queryURL = 'https://s.search.naver.com/p/newssearch/search.naver?cluster_rank=19&de=&ds=&eid=&field=0&force_original=&is_dts=0&is_sug_officeid=0&mynews=0&news_office_checked=&nlu_query=&nqx_theme=&nso=%26nso%3Dso%3Ar%2Cp%3Aall%2Ca%3Aall&nx_and_query=&nx_search_hlquery=&nx_search_query=&nx_sub_query=&office_category=0&office_section_code=0&office_type=0&pd=0&photo=0&query=' + title + '&query_original=&service_area=0&sort=0&spq=0&start=' + str(page) + '1&where=news_tab_api&nso=so:r,p:all,a:all'
+        print(queryURL)
         try:
             response = requests.get(queryURL, timeout=10)
         except:
