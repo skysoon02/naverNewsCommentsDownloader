@@ -73,13 +73,12 @@ def main():
 
 
 def debug():
-    print(searchParticularNews(titleBeautifier('대통령실 사퇴 요구에 한동훈 비대위원장이 직접 밝힌 입장'), 1))
-    print(searchSeveralNewses(titleBeautifier('대통령실 사퇴 요구에 한동훈 비대위원장이 직접 밝힌 입장'), 50))
-    downloadNewsContent('https://n.news.naver.com/article/052/0001740291')
+    #print(searchParticularNews(titleBeautifier('대통령실 사퇴 요구에 한동훈 비대위원장이 직접 밝힌 입장'), 1))
+    #print(searchSeveralNewses(titleBeautifier('대통령실 사퇴 요구에 한동훈 비대위원장이 직접 밝힌 입장'), 50))
+    #downloadNewsContent('https://n.news.naver.com/article/052/0001740291')
+    #downloadNewsContent('https://n.news.naver.com/article/656/0000077835')
+    #downloadNewsComments('https://n.news.naver.com/article/052/0001740291')
     return
-    downloadNewsContent('https://n.news.naver.com/article/656/0000077835')
-    return
-    downloadNewsComments('https://n.news.naver.com/article/052/0001740291')
     print(searchSeveralNewses(titleBeautifier('대통령실 사퇴 요구에 한동훈 비대위원장이 직접 밝힌 입장'), 50))
     print(searchParticularNews("韓 '지금보다 더 최선 다할 것'", 448))
     print(newsListReader())
