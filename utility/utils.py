@@ -1,27 +1,4 @@
-from config import *
-from predefined import *
-
 import re
-import os
-
-
-#path_newsTitle에서 네이버 뉴스 title과 채널들이 저장되어 있는 파일을 읽어와서 list로 반환하는 함수
-#format
-#title              channel
-#KAIST duck...      TV조선
-#Korean birth...    MBC
-def newsListReader():
-    newsList = []
-
-    for file_name in os.listdir(path_newsTitle):
-        f = open(path_newsTitle+'/'+file_name, 'r', encoding='utf-8-sig')
-        lines = f.readlines()
-        for line in lines:
-            title = line.split('\t')[0]
-            channelID = channelNameToID[line.split('\t')[1].rstrip('\n')]
-            newsList.append([title, channelID])
-
-    return newsList
 
 
 #풀영상이나 다시보기 등 네이버 뉴스에 없을만한 영상 제목들을 거르는 함수
@@ -72,8 +49,29 @@ def titleFilter(title, channelID):
 #TV조선: [*]제거, postfix의 /* 제거
 #채널A: [*]제거, postfix의 /*, |* 제거
 def titleBeautifier(title0):
+    idx1 = title0.rfind('|')
+    if idx1 != -1:
+        title0 = title0[:idx1]
+    else:
+        idx2 = title0.rfind('/')
+        if idx2 != -1:
+            title0 = title0[:idx2]
+
     title1 = re.sub(r"\(.*\)|\[.*\]|/.*|\|.*", "", title0)  #()제거, []제거, \제거, |제거
-    title2 = re.sub("\"", "'", title1)          #큰따옴표를 작은따옴표로 변경. 네이버 검색할 때 별 문제 안 생기는 추정 됨
+    title2 = re.sub("“|”|\"", "", title1)       #큰따옴표를 공백으로 변경
     title3 = re.sub(" ", "+", title2)           #공백을 더하기로 변경. 네이버 URL방식을 따름.
     return title3
-    
+
+
+#LCS문자열 비교 함수
+#B에 A의 LCS가 들어있는 비율을 출력
+def LCS(A, B):
+    dp = [[0 for _ in range(len(B)+1)] for _ in range(len(A)+1)]
+
+    for i in range(len(A)):
+        for j in range(len(B)):
+            if A[i] == B[j]:
+                dp[i+1][j+1] = dp[i][j] +1
+            else:
+                dp[i+1][j+1] = max(dp[i+1][j], dp[i][j+1])
+    return dp[i+1][j+1]/len(A)

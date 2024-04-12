@@ -1,6 +1,3 @@
-startTime = '202301215' + '000000' + '00000'  #YYYYMMDD + HHMMSS + 00000
-
-
 targetChannelList = [
     {
         'name': 'YTN',
