@@ -1,6 +1,7 @@
 from config.setting import *
 from download.api import *
 from download.search import *
+from utility.mysql import *
 from utility.utils import *
 from utility.tsv import *
 
@@ -104,7 +105,9 @@ def main2():
 
 
 def debug():
-    print(downloadUserFollowers(822456347902607549, 'commentID'))
+    db_init()
+    db_check()
+    #print(downloadUserFollowers(822456347902607549, 'commentID'))
     #print(downloadUserComments(822449671979925557, 'commentID'))
     #print(downloadUserID(822449671979925557))
     #print(titleBeautifier("“수도권 공천에 국민 의견 80% 반영”…한 “의원 250명으로 축소” [9시 뉴스] (2024.01.02) / KBS  2024.01.16."))
