@@ -7,6 +7,31 @@ from bs4 import BeautifulSoup
 import json
 
 
+#news의 URL을 입력 받아서 content를 다운로드
+def downloadNewsContent(newsURL):
+    try:
+        response = requests.get(newsURL, timeout=10)
+    except:
+        print('Time out from requests.get(): ', newsURL)
+        return
+    
+    return response.text
+
+    soup = BeautifulSoup(response.text, 'html.parser')
+    print(soup.select_one('#title_area > span'))    #제목
+    print(soup.select_one('#dic_area')) #본문(사진 포함)
+    
+    if soup.select_one('#contents > div._VOD_PLAYER_WRAP') != None: #영상이 있는 경우 영상 주소 반환
+        videoKey = soup.select_one('#contents > div._VOD_PLAYER_WRAP').get('data-inkey')
+        apiURL = 'https://apis.naver.com/rmcnmv/rmcnmv/vod/play/v2.0/ED5B61A25414EDC8495C57707F7CE007402B?key=' + videoKey + '&sid=2006&pid=51d65d91-8641-4c35-9d8f-1ad4bedd9b93&nonce=1706446614203&devt=HTML5_PC&prv=N&aup=N&stpb=N&cpl=ko_KR&env=real&lc=ko_KR&adi=%5B%7B%22adSystem%22%3A%22null%22%7D%5D&adu=%2F'
+        try:
+            response = requests.get(apiURL, timeout=10)
+        except:
+            print('Time out from requests.get(): ', apiURL)
+            return
+        print(json.loads(response.text)['meta']['url'])
+
+
 #news의 URL을 입력 받아서 comments를 다운로드
 def downloadNewsComments(newsURL):
     comments = []
@@ -50,51 +75,36 @@ def downloadNewsComments(newsURL):
     return comments
 
 
-#news의 URL을 입력 받아서 content를 다운로드
-def downloadNewsContent(newsURL):
-    try:
-        response = requests.get(newsURL, timeout=10)
-    except:
-        print('Time out from requests.get(): ', newsURL)
-        return
+def downloadUserContent(ID, paramType):
+    comments = []
     
-    return response.text
-
-    soup = BeautifulSoup(response.text, 'html.parser')
-    print(soup.select_one('#title_area > span'))    #제목
-    print(soup.select_one('#dic_area')) #본문(사진 포함)
+    if paramType=='commentID':
+        commentID = ID
+        apiURL = "https://apis.naver.com/commentBox/cbox/web_naver_user_info_jsonp.json?ticket=news&templateId=view_society_m1&pool=cbox5&_cv=20240311122521&_callback=jQuery331046734403471661223_1710381136305&lang=ko&country=KR&objectId=news001%2C00000123&categoryId=&pageSize=20&indexSize=10&groupId=&listType=user&pageType=more&page=2&commentNo="+str(commentID)+"&targetUserInKey=&includeAllStatus=true&_=1710381136309"
+    elif paramType=='userID':
+        userID = ID
+        apiURL = "https://apis.naver.com/commentBox/cbox/web_naver_user_info_jsonp.json?ticket=news&templateId=view_society_m1&pool=cbox5&_cv=20240311122521&_callback=jQuery33105296405296895645_1710383158565&lang=ko&country=KR&objectId=&categoryId=&pageSize=20&indexSize=10&groupId=&listType=user&pageType=more&commentNo=&targetUserInKey="+str(userID)+"&includeAllStatus=true&_=1710383158572"
     
-    if soup.select_one('#contents > div._VOD_PLAYER_WRAP') != None: #영상이 있는 경우 영상 주소 반환
-        videoKey = soup.select_one('#contents > div._VOD_PLAYER_WRAP').get('data-inkey')
-        apiURL = 'https://apis.naver.com/rmcnmv/rmcnmv/vod/play/v2.0/ED5B61A25414EDC8495C57707F7CE007402B?key=' + videoKey + '&sid=2006&pid=51d65d91-8641-4c35-9d8f-1ad4bedd9b93&nonce=1706446614203&devt=HTML5_PC&prv=N&aup=N&stpb=N&cpl=ko_KR&env=real&lc=ko_KR&adi=%5B%7B%22adSystem%22%3A%22null%22%7D%5D&adu=%2F'
-        try:
-            response = requests.get(apiURL, timeout=10)
-        except:
-            print('Time out from requests.get(): ', apiURL)
-            return
-        print(json.loads(response.text)['meta']['url'])
 
-
-
-'''
-def downloadUserID(commentID):
     headers = {
         'Referer': "https://n.news.naver.com",
         "User-agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36"
     }
-    apiURL = "https://apis.naver.com/commentBox/cbox/web_naver_user_info_jsonp.json?ticket=news&templateId=view_society_m1&pool=cbox5&_cv=20240311122521&_callback=jQuery331046734403471661223_1710381136305&lang=ko&country=KR&objectId=news001%2C00000123&categoryId=&pageSize=20&indexSize=10&groupId=&listType=user&pageType=more&page=2&commentNo="+str(commentID)+"&targetUserInKey=&includeAllStatus=true&_=1710381136309"
 
+    #첫페이지 받아오기
     try:
         response = requests.get(apiURL, headers=headers, timeout=10)
     except:
         print('Time out from requests.get(): ', apiURL)
         return
-
-    print(response.text)
+    if response.status_code != 200:
+        return
+    
+    #내용을 감싸는 jQuery~함수 부분 제거
     startIdx = response.text.find('{')
     resDict = json.loads(response.text[startIdx:-2])
-    return resDict['result']['commentList'][0]
-'''
+    return {'periodUserStats': resDict['result']['periodUserStats'], 'commentUserStats': resDict['result']['commentUserStats']}
+     
 
 def downloadUserComments(ID, paramType):
     comments = []
@@ -125,8 +135,6 @@ def downloadUserComments(ID, paramType):
     startIdx = response.text.find('{')
     resDict = json.loads(response.text[startIdx:-2])
     comments.append(resDict['result']['commentList'])
-
-
 
     for page in range(2, resDict['result']['pageModel']['totalPages']+1):
 

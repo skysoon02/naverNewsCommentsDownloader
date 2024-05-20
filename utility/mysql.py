@@ -1,17 +1,17 @@
 from config.setting import *
 
-import pymysql
+import mysql.connector
 
 class DB:
-    def __init__(self, ):
-        self.conn = pymysql.connect(**DB_info)
+    def __init__(self):
+        self.conn = mysql.connector.connect(**DB_info)
         cur = self.conn.cursor()
         
         #newsTable
         query = '''
         CREATE TABLE IF NOT EXISTS newsTable(
             objectId char(20) NOT NULL PRIMARY KEY,
-            content JSON,
+            content longtext,
             ctime timestamp DEFAULT CURRENT_TIMESTAMP
         )'''
         cur.execute(query)
@@ -19,7 +19,7 @@ class DB:
         #userTable
         query = '''
         CREATE TABLE IF NOT EXISTS userTable(
-            userIdNo char(5)  NOT NULL PRIMARY KEY,
+            userIdNo char(10)  NOT NULL PRIMARY KEY,
             userInkey bigint,
             content JSON,
             ctime timestamp DEFAULT CURRENT_TIMESTAMP
@@ -32,7 +32,7 @@ class DB:
             commentNo bigint NOT NULL PRIMARY KEY,
             parentCommentNo bigint,
             objectId char(20),
-            userIdNo char(5),
+            userIdNo char(10),
             content JSON,
             ctime timestamp DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (parentCommentNo) REFERENCES commentTable(commentNo)
@@ -42,12 +42,14 @@ class DB:
         #followTable
         query = '''
         CREATE TABLE IF NOT EXISTS followTable(
-            followerIdNo char(5),
-            followeeIdNo char(5),
-            ctime timestamp DEFAULT CURRENT_TIMESTAMP,
+            followerIdNo char(10),
+            followeeIdNo char(10),
+            ctime timestamp DEFAULT CURRENT_TIMESTAMP
+        )'''
+        '''
             FOREIGN KEY (followerIdNo) REFERENCES userTable(userIdNo),
             FOREIGN KEY (followeeIdNo) REFERENCES userTable(userIdNo)
-        )'''
+        '''
         cur.execute(query)
 
 
@@ -75,13 +77,36 @@ class DB:
         self.printCur(cur)
 
 
-    def insert(self, table, value):
+    def insertNews(self, value):
         cur = self.conn.cursor()
-        query=f'INSERT INTO {table} VALUES ({value})'
-        print(query)
-        return
-        cur.execute(query)
-        self.printCur(cur)
+        query=f'INSERT INTO newsTable VALUES (%s %s)'
+        cur.executemany(query, value)
+        self.conn.commit()
+        #self.printCur(cur)
+        
+
+    def insertUser(self, value):
+        cur = self.conn.cursor()
+        query=f'INSERT INTO userTable VALUES (%s %s %s)'
+        cur.executemany(query, value)
+        self.conn.commit()
+        #self.printCur(cur)
+        
+
+    def insertComment(self, value):
+        cur = self.conn.cursor()
+        query=f'INSERT INTO commentTable VALUES (%s %s %s %s %s)'
+        cur.executemany(query, value)
+        self.conn.commit()
+        #self.printCur(cur)
+        
+
+    def insertFollow(self, value):
+        cur = self.conn.cursor()
+        query=f'INSERT INTO followTable VALUES (%s %s)'
+        cur.executemany(query, value)
+        self.conn.commit()
+        #self.printCur(cur)
 
 
     def search(self, table, id):

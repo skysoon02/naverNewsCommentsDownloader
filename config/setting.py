@@ -13,6 +13,6 @@ DB_info = {
 }
 
 
-number_of_process = 16
+number_of_process = 4
 
 startTime = '202301215' + '000000' + '00000'  #YYYYMMDD + HHMMSS + 00000
