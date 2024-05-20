@@ -56,7 +56,7 @@ def downloadNewsComments(newsURL):
     #내용을 감싸는 jQuery~함수 부분 제거
     startIdx = response.text.find('{')
     resDict = json.loads(response.text[startIdx:-2])
-    comments.append(resDict['result']['commentList'])
+    comments.extend(resDict['result']['commentList'])
 
     for page in range(2, resDict['result']['pageModel']['totalPages']+1):
         apiURL = 'https://apis.naver.com/commentBox/cbox/web_naver_list_jsonp.json?ticket=news&templateId=default_economy&pool=cbox5&_cv=20240116144725&_callback=jQuery331023416264284422983_1705575101314&lang=ko&country=KR&objectId=news'+oid+'%2C'+aid+'&categoryId=&pageSize=20&indexSize=10&groupId=&listType=OBJECT&pageType=more&page='+str(page)+'&currentPage='+str(page-1)+'&refresh=false&sort=REPLY&current=814607337766518790&prev=814571801492324559&moreParam.direction=next&moreParam.prev='+str(resDict['result']['morePage']['prev'])+'&moreParam.next='+str(resDict['result']['morePage']['next'])+'&includeAllStatus=true&_=1705575101318'
@@ -70,7 +70,7 @@ def downloadNewsComments(newsURL):
     
         startIdx = response.text.find('{')
         resDict = json.loads(response.text[startIdx:-2])
-        comments.append(resDict['result']['commentList'])
+        comments.extend(resDict['result']['commentList'])
     
     return comments
 
@@ -134,7 +134,7 @@ def downloadUserComments(ID, paramType):
     #내용을 감싸는 jQuery~함수 부분 제거
     startIdx = response.text.find('{')
     resDict = json.loads(response.text[startIdx:-2])
-    comments.append(resDict['result']['commentList'])
+    comments.extend(resDict['result']['commentList'])
 
     for page in range(2, resDict['result']['pageModel']['totalPages']+1):
 
@@ -152,7 +152,7 @@ def downloadUserComments(ID, paramType):
     
         startIdx = response.text.find('{')
         resDict = json.loads(response.text[startIdx:-2])
-        comments.append(resDict['result']['commentList'])
+        comments.extend(resDict['result']['commentList'])
     
     return comments
 
@@ -185,7 +185,7 @@ def downloadUserFollowers(ID, paramType):
     startIdx = response.text.find('{')
     resDict = json.loads(response.text[startIdx:-2])
     for user in resDict['result']['userInfo']:
-        followers.append([user['idNo'], int(user['userInKey'])])
+        followers.extend([user['idNo'], int(user['userInKey'])])
 
     while resDict['result']['next'] is not None:
         if paramType=='commentID':
@@ -205,7 +205,7 @@ def downloadUserFollowers(ID, paramType):
         startIdx = response.text.find('{')
         resDict = json.loads(response.text[startIdx:-2])
         for user in resDict['result']['userInfo']:
-            followers.append([user['idNo'], int(user['userInKey'])])
+            followers.extend([user['idNo'], int(user['userInKey'])])
 
     return followers
 
@@ -238,7 +238,7 @@ def downloadUserFollowings(ID, paramType):
     startIdx = response.text.find('{')
     resDict = json.loads(response.text[startIdx:-2])
     for user in resDict['result']['userInfo']:
-        followings.append([user['idNo'], int(user['userInKey'])])
+        followings.extend([user['idNo'], int(user['userInKey'])])
 
     while resDict['result']['next'] is not None:
         if paramType=='commentID':
@@ -258,6 +258,6 @@ def downloadUserFollowings(ID, paramType):
         startIdx = response.text.find('{')
         resDict = json.loads(response.text[startIdx:-2])
         for user in resDict['result']['userInfo']:
-            followings.append([user['idNo'], int(user['userInKey'])])
+            followings.extend([user['idNo'], int(user['userInKey'])])
 
     return followings
