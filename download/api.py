@@ -54,9 +54,14 @@ def downloadNewsComments(newsURL):
         return
     
     #내용을 감싸는 jQuery~함수 부분 제거
-    startIdx = response.text.find('{')
-    resDict = json.loads(response.text[startIdx:-2])
-    comments.extend(resDict['result']['commentList'])
+    try:
+        startIdx = response.text.find('{')
+        resDict = json.loads(response.text[startIdx:-2])
+        if resDict['result'] == {}:
+            return None    
+        comments.extend(resDict['result']['commentList'])
+    except:
+        return None
 
     for page in range(2, resDict['result']['pageModel']['totalPages']+1):
         apiURL = 'https://apis.naver.com/commentBox/cbox/web_naver_list_jsonp.json?ticket=news&templateId=default_economy&pool=cbox5&_cv=20240116144725&_callback=jQuery331023416264284422983_1705575101314&lang=ko&country=KR&objectId=news'+oid+'%2C'+aid+'&categoryId=&pageSize=20&indexSize=10&groupId=&listType=OBJECT&pageType=more&page='+str(page)+'&currentPage='+str(page-1)+'&refresh=false&sort=REPLY&current=814607337766518790&prev=814571801492324559&moreParam.direction=next&moreParam.prev='+str(resDict['result']['morePage']['prev'])+'&moreParam.next='+str(resDict['result']['morePage']['next'])+'&includeAllStatus=true&_=1705575101318'
@@ -150,8 +155,13 @@ def downloadUserComments(ID, paramType):
         return None
 
     for page in range(2, resDict['result']['pageModel']['totalPages']+1):
-
-        apiURL = 'https://apis.naver.com/commentBox/cbox/web_naver_list_per_user_jsonp.json?ticket=news&pool=cbox5&_cv=20240311122521&lang=ko&country=KR&categoryId=&pageSize=20&indexSize=10&listType=user&pageType=more&sort=NEW&moreParam.direction=next&moreParam.prev='+resDict['result']['morePage']['prev']+'&moreParam.next='+resDict['result']['morePage']['next']+'&targetUserInKey=686913160061388254&includeAllStatus=true&_=1710470908862'
+        if paramType=='commentID':
+            commentID = ID
+            apiURL = 'https://apis.naver.com/commentBox/cbox/web_naver_list_per_user_jsonp.json?ticket=news&pool=cbox5&_cv=20240311122521&lang=ko&country=KR&objectId=news001%2C0014620778&categoryId=&pageSize=20&indexSize=10&listType=user&pageType=more&sort=NEW&moreParam.direction=next&moreParam.prev='+resDict['result']['morePage']['prev']+'&moreParam.next='+resDict['result']['morePage']['next']+'&commentNo='+str(commentID)+'&includeAllStatus=true&_=1710470908862'
+        elif paramType=='userID':
+            userID = ID
+            apiURL = 'https://apis.naver.com/commentBox/cbox/web_naver_list_per_user_jsonp.json?ticket=news&pool=cbox5&_cv=20240311122521&lang=ko&country=KR&objectId=news001%2C0014620778&categoryId=&pageSize=20&indexSize=10&listType=user&pageType=more&sort=NEW&moreParam.direction=next&moreParam.prev='+resDict['result']['morePage']['prev']+'&moreParam.next='+resDict['result']['morePage']['next']+'&targetUserInKey='+str(userID)+'&includeAllStatus=true&_=1710470908862'
+                
         try:
             response = requests.get(apiURL, headers=headers, timeout=10)
         except:
@@ -160,9 +170,6 @@ def downloadUserComments(ID, paramType):
         if response.status_code != 200:
             return
 
-        print(response.text)
-        print(response)
-    
         startIdx = response.text.find('{')
         resDict = json.loads(response.text[startIdx:-2])
         comments.extend(resDict['result']['commentList'])
