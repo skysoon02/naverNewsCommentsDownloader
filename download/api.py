@@ -101,9 +101,16 @@ def downloadUserContent(ID, paramType):
         return
     
     #내용을 감싸는 jQuery~함수 부분 제거
-    startIdx = response.text.find('{')
-    resDict = json.loads(response.text[startIdx:-2])
-    return {'periodUserStats': resDict['result']['periodUserStats'], 'commentUserStats': resDict['result']['commentUserStats']}
+    try:
+        startIdx = response.text.find('{')
+        resDict = json.loads(response.text[startIdx:-2])
+        if resDict['result'] == {}:
+            return None
+        return {'user': resDict['result']['user'], 'periodUserStats': resDict['result']['periodUserStats'], 'commentUserStats': resDict['result']['commentUserStats']}
+    except:
+        print('There is no user info from downloadUserContent: ', ID, '\n')
+        return None
+    
      
 
 def downloadUserComments(ID, paramType):
@@ -132,9 +139,15 @@ def downloadUserComments(ID, paramType):
         return
 
     #내용을 감싸는 jQuery~함수 부분 제거
-    startIdx = response.text.find('{')
-    resDict = json.loads(response.text[startIdx:-2])
-    comments.extend(resDict['result']['commentList'])
+    try:
+        startIdx = response.text.find('{')
+        resDict = json.loads(response.text[startIdx:-2])
+        if resDict['result'] == {}:
+            return None
+        comments.extend(resDict['result']['commentList'])
+    except:
+        print('There is no user info from downloadUserComments: ', ID, '\n')
+        return None
 
     for page in range(2, resDict['result']['pageModel']['totalPages']+1):
 
@@ -182,10 +195,17 @@ def downloadUserFollowers(ID, paramType):
         return
     
     #내용을 감싸는 jQuery~함수 부분 제거
-    startIdx = response.text.find('{')
-    resDict = json.loads(response.text[startIdx:-2])
-    for user in resDict['result']['userInfo']:
-        followers.extend([user['idNo'], int(user['userInKey'])])
+    try:
+        startIdx = response.text.find('{')
+        resDict = json.loads(response.text[startIdx:-2])
+        if resDict['result'] == {}:
+            print('There is no user info from downloadUserFollowers: ', ID, '\n')
+            return None
+        for user in resDict['result']['userInfo']:
+            followers.append([user['idNo'], int(user['userInKey'])])
+    except:
+        print('There is no user info from downloadUserFollowers: ', ID, '\n')
+        return None
 
     while resDict['result']['next'] is not None:
         if paramType=='commentID':
@@ -205,7 +225,7 @@ def downloadUserFollowers(ID, paramType):
         startIdx = response.text.find('{')
         resDict = json.loads(response.text[startIdx:-2])
         for user in resDict['result']['userInfo']:
-            followers.extend([user['idNo'], int(user['userInKey'])])
+            followers.append([user['idNo'], int(user['userInKey'])])
 
     return followers
 
@@ -235,10 +255,17 @@ def downloadUserFollowings(ID, paramType):
         return
     
     #내용을 감싸는 jQuery~함수 부분 제거
-    startIdx = response.text.find('{')
-    resDict = json.loads(response.text[startIdx:-2])
-    for user in resDict['result']['userInfo']:
-        followings.extend([user['idNo'], int(user['userInKey'])])
+    try:
+        startIdx = response.text.find('{')
+        resDict = json.loads(response.text[startIdx:-2])
+        if resDict['result'] == {}:
+            print('There is no user info from downloadUserFollowings: ', ID, '\n')
+            return None
+        for user in resDict['result']['userInfo']:
+            followings.append([user['idNo'], int(user['userInKey'])])
+    except:
+        print('There is no user info from downloadUserFollowings: ', ID, '\n')
+        return None
 
     while resDict['result']['next'] is not None:
         if paramType=='commentID':
@@ -258,6 +285,6 @@ def downloadUserFollowings(ID, paramType):
         startIdx = response.text.find('{')
         resDict = json.loads(response.text[startIdx:-2])
         for user in resDict['result']['userInfo']:
-            followings.extend([user['idNo'], int(user['userInKey'])])
+            followings.append([user['idNo'], int(user['userInKey'])])
 
     return followings

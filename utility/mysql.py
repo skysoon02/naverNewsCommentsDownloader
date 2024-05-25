@@ -20,7 +20,7 @@ class DB:
         query = '''
         CREATE TABLE IF NOT EXISTS userTable(
             userIdNo char(10)  NOT NULL PRIMARY KEY,
-            userInkey bigint,
+            userInKey char(20),
             content JSON,
             ctime timestamp DEFAULT CURRENT_TIMESTAMP
         )'''
@@ -34,22 +34,24 @@ class DB:
             objectId char(20),
             userIdNo char(10),
             content JSON,
-            ctime timestamp DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (parentCommentNo) REFERENCES commentTable(commentNo)
+            ctime timestamp DEFAULT CURRENT_TIMESTAMP
         )'''
         cur.execute(query)
 
         #followTable
         query = '''
         CREATE TABLE IF NOT EXISTS followTable(
-            followerIdNo char(10),
             followeeIdNo char(10),
+            followerIdNo char(10),
             ctime timestamp DEFAULT CURRENT_TIMESTAMP
         )'''
-        '''
-            FOREIGN KEY (followerIdNo) REFERENCES userTable(userIdNo),
-            FOREIGN KEY (followeeIdNo) REFERENCES userTable(userIdNo)
-        '''
+        cur.execute(query)
+
+        #Encoding
+        query= 'SET NAMES utf8mb4'
+        cur.execute(query)
+
+        query= 'ALTER DATABASE commentDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci'
         cur.execute(query)
 
 
@@ -72,14 +74,26 @@ class DB:
         cur.execute(query)
         self.printCur(cur)
             
-        query = 'desc commentTable'
+        query = 'desc newsTable'
         cur.execute(query)
         self.printCur(cur)
 
+    
+    def deleteAll(self):
+        cur = self.conn.cursor()
+        query = 'drop table commentTable'
+        cur.execute(query)
+        query = 'drop table followTable'
+        cur.execute(query)
+        query = 'drop table newsTable'
+        cur.execute(query)
+        query = 'drop table userTable'
+        cur.execute(query)
+    
 
     def insertNews(self, value):
         cur = self.conn.cursor()
-        query=f'INSERT INTO newsTable VALUES (%s %s)'
+        query='INSERT INTO newsTable (objectId, content) VALUES (%s, %s)'
         cur.executemany(query, value)
         self.conn.commit()
         #self.printCur(cur)
@@ -87,7 +101,7 @@ class DB:
 
     def insertUser(self, value):
         cur = self.conn.cursor()
-        query=f'INSERT INTO userTable VALUES (%s %s %s)'
+        query='INSERT INTO userTable (userIdNo, userInKey, content) VALUES (%s, %s, %s)'
         cur.executemany(query, value)
         self.conn.commit()
         #self.printCur(cur)
@@ -95,7 +109,7 @@ class DB:
 
     def insertComment(self, value):
         cur = self.conn.cursor()
-        query=f'INSERT INTO commentTable VALUES (%s %s %s %s %s)'
+        query='INSERT INTO commentTable (commentNo, parentCommentNo, objectId, userIdNo, content) VALUES (%s, %s, %s, %s, %s)'
         cur.executemany(query, value)
         self.conn.commit()
         #self.printCur(cur)
@@ -103,15 +117,22 @@ class DB:
 
     def insertFollow(self, value):
         cur = self.conn.cursor()
-        query=f'INSERT INTO followTable VALUES (%s %s)'
+        query='INSERT INTO followTable (followeeIdNo, followerIdNo) VALUES (%s, %s)'
         cur.executemany(query, value)
         self.conn.commit()
         #self.printCur(cur)
 
 
-    def search(self, table, id):
+    def searchNews(self, id):
         cur = self.conn.cursor()
-        query=f'SELECT * FROM {table} WHERE {id}'
+        query=f'SELECT EXISTS(SELECT 1 FROM newsTable WHERE objectId = "{id}") as cnt'
         cur.execute(query)
-        self.printCur(cur)
+        return True if cur.fetchall()[0][0]==1 else False
+    
+    
+    def searchUser(self, id):
+        cur = self.conn.cursor()
+        query=f'SELECT EXISTS(SELECT 1 FROM userTable WHERE userIdNo = "{id}") as cnt'
+        cur.execute(query)
+        return True if cur.fetchall()[0][0]==1 else False
 
