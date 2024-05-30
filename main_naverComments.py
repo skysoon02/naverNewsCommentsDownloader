@@ -7,6 +7,7 @@ from utility.tsv import *
 
 import json
 from multiprocessing import Pool
+import tqdm
 import csv
 from datetime import datetime
 
@@ -85,9 +86,18 @@ def main():
             newsURLs.append(row[0])
 
     #1. 뉴스 다운로드 후 저장
+    '''
     res = []
     with Pool(processes=number_of_process) as pool:
-        res = pool.map(downloadNewsContent_process, newsURLs)
+        res = list(tqdm.tqdm(pool.imap(downloadNewsContent_process, newsURLs), total=len(newsURLs)))
+    db.insertNews(res)
+    '''
+    res = []
+    for newsURL in newsURLs:
+        oid = newsURL.split('/')[-2]    #채널 ID
+        aid = newsURL.split('/')[-1]    #뉴스 ID
+        objectId = oid + '_' + aid
+        res.append((objectId, ''))
     db.insertNews(res)
 
     print(datetime.now().strftime('[%Y-%m-%d %H:%M:%S]'), end=' ')
@@ -96,9 +106,11 @@ def main():
     #2. 댓글 다운로드 후 저장
     res = []
     with Pool(processes=number_of_process) as pool:
-        res = pool.map(downloadNewsComments_process, newsURLs)
-    comments = sum(res, [])
-    db.insertComment(comments)
+        res = list(tqdm.tqdm(pool.imap(downloadNewsComments_process, newsURLs), total=len(newsURLs)))
+        for commentList in res:
+            #commentList = [i for i in commentList if db.searchComment(i[0])==False]
+            db.insertComment(commentList)
+        comments = sum(res, [])
 
     print(datetime.now().strftime('[%Y-%m-%d %H:%M:%S]'), end=' ')
     print('Init. {0} comments data are stored in DB.'.format(len(comments)))
@@ -123,7 +135,7 @@ def main():
         #1. 유저
         #1-1. 유저 정보 다운로드
         with Pool(processes=number_of_process) as pool:
-            res = pool.map(downloadUserContents_process, users.values())
+            res = list(tqdm.tqdm(pool.imap(downloadUserContents_process, users.values()), total=len(users.values())))
         res = [i for i in res if i != None] #None 제거. user info가 없는 경우  None으로 반환됨
         db.insertUser(res)
 
@@ -132,36 +144,50 @@ def main():
         
         #1-2. 유저가 작성한 Comments 다운로드
         with Pool(processes=number_of_process) as pool:
-            res = pool.map(downloadUserComments_process, users.values())
+            res = list(tqdm.tqdm(pool.imap(downloadUserComments_process, users.values()), total=len(users.values())))
         comments = sum(res, [])
-        db.insertComment(comments)
 
         print(datetime.now().strftime('[%Y-%m-%d %H:%M:%S]'), end=' ')
         print('Cycle\t{0}. {1} comments data are stored in DB.'.format(cycle, len(comments)))
 
         #2. 뉴스
         #2-1. 댓글에서 뉴스 추출
-        newsURLs = {}
-        for comment in res:
-            newsURL = "https://n.news.naver.com/mnews/article/" + comment['objectId'][4:7] + '_' +  comment['objectId'][8:]
-            newsURLs.add(newsURL)
+        '''
+        newsURLs = set()
+        for comment in comments:
+            if db.searchNews(comment[2][4:7] + '_' +  comment[2][8:]) == False:  #objectId
+                newsURL = "https://n.news.naver.com/mnews/article/" + comment[2][4:7] + '/' +  comment[2][8:]
+                newsURLs.add(newsURL)
         newsURLs = list(newsURLs)
 
         #2-2. 뉴스 다운로드 후 저장
         res = []
         with Pool(processes=number_of_process) as pool:
-            res = pool.map(downloadNewsContent_process, newsURLs)
+            res = list(tqdm.tqdm(pool.imap(downloadNewsContent_process, newsURLs), total=len(newsURLs)))
         db.insertNews(res)
-        
-        print(datetime.now().strftime('[%Y-%m-%d %H:%M:%S]'), end=' ')
-        print('Cycle\t{0}. {1} news data are stored in DB.'.format(cycle, len(res)))
+        '''
 
-        #2-2. 뉴스의 댓글 다운로드 후 저장
+        newsIDs = set()
+        for comment in comments:
+            objectId = comment[2][4:7] + '_' +  comment[2][8:]
+            if db.searchNews(objectId) == False:  #objectId
+                newsIDs.add(objectId)
+        newsIDs = list(newsIDs)
+        newsURLs = ["https://n.news.naver.com/mnews/article/" + newsID.replace('_', '/') for newsID in newsIDs] 
+        newsIDs = [(newsID, '') for newsID in newsIDs]
+        db.insertNews(newsIDs)
+
+        print(datetime.now().strftime('[%Y-%m-%d %H:%M:%S]'), end=' ')
+        print('Cycle\t{0}. {1} news data are stored in DB.'.format(cycle, len(newsIDs)))
+
+        #2-3. 뉴스의 댓글 다운로드 후 저장
         res = []
         with Pool(processes=number_of_process) as pool:
-            res = pool.map(downloadNewsComments_process, newsURLs)
+            res = list(tqdm.tqdm(pool.imap(downloadNewsComments_process, newsURLs), total=len(newsURLs)))
+        for commentList in res:
+            #commentList = [i for i in commentList if db.searchComment(i[0])==False]
+            db.insertComment(commentList)
         comments = sum(res, [])
-        db.insertComment(comments)
 
         print(datetime.now().strftime('[%Y-%m-%d %H:%M:%S]'), end=' ')
         print('Cycle\t{0}. {1} comments data are stored in DB.'.format(cycle, len(comments)))
@@ -169,7 +195,7 @@ def main():
         #3. 유저의 팔로우
         #3-1. 팔로워 정보 다운로드 후 저장
         with Pool(processes=number_of_process) as pool:
-            res = pool.map(downloadUserFollowers_process, users.items())
+            res = list(tqdm.tqdm(pool.imap(downloadUserFollowers_process, users.items()), total=len(users.items())))
         res = [i for i in res if i[1] != None] #None 제거. user info가 없는 경우  None으로 반환됨
 
         followDB = []
@@ -201,6 +227,7 @@ def main():
 
 
 def debug():
+    #print(downloadNewsContent('https://n.news.naver.com/mnews/article/056/0011425827'))
     #print(downloadUserComments(826737275369947268, 'commentID'))
     db = DB()
     db.check()

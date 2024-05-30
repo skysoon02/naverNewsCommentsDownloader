@@ -9,11 +9,29 @@ import json
 
 #news의 URL을 입력 받아서 content를 다운로드
 def downloadNewsContent(newsURL):
+    headers = {
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+        'Accept-Encoding': 'gzip, deflate, br, zstd',
+        'Accept-Language': 'ko-KR,ko;q=0.9',
+        'Cache-Control': 'max-age=0',
+        'Cookie': 'N_SES=a63b7bc9-e495-4f2b-8f73-a236a4ba68f0; NNB=KPO4DII7AVKGM; VISIT_LOG_CLEAN=1',
+        'Priority': 'u=0, i',
+        'Sec-Ch-Ua': '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
+        'Sec-Ch-Ua-Mobile': '?0',
+        'Sec-Ch-Ua-Platform': '"Windows"',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'same-origin',
+        'Sec-Fetch-User': '?1',
+        'Upgrade-Insecure-Requests': '1',
+        "User-agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+    }
     try:
-        response = requests.get(newsURL, timeout=10)
+        response = requests.get(newsURL, headers=headers, timeout=5)
+        print(response)
     except:
         print('Time out from requests.get(): ', newsURL)
-        return
+        return 
     
     return response.text
 

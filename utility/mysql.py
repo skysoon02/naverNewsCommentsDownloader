@@ -48,11 +48,13 @@ class DB:
         cur.execute(query)
 
         #Encoding
-        query= 'SET NAMES utf8mb4'
+        query = 'SET NAMES utf8mb4'
+        cur.execute(query)
+        query = 'ALTER DATABASE commentDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci'
         cur.execute(query)
 
-        query= 'ALTER DATABASE commentDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci'
-        cur.execute(query)
+        #query = 'SET global max_allowed_packet=1000000000'
+        #cur.execute(query)
 
 
     def printCur(self, cur):
@@ -126,6 +128,13 @@ class DB:
     def searchNews(self, id):
         cur = self.conn.cursor()
         query=f'SELECT EXISTS(SELECT 1 FROM newsTable WHERE objectId = "{id}") as cnt'
+        cur.execute(query)
+        return True if cur.fetchall()[0][0]==1 else False
+    
+
+    def searchComment(self, id):
+        cur = self.conn.cursor()
+        query=f'SELECT EXISTS(SELECT 1 FROM commentTable WHERE commentNo = "{id}") as cnt'
         cur.execute(query)
         return True if cur.fetchall()[0][0]==1 else False
     
