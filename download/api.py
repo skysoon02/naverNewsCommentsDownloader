@@ -9,11 +9,29 @@ import json
 
 #news의 URL을 입력 받아서 content를 다운로드
 def downloadNewsContent(newsURL):
+    headers = {
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+        'Accept-Encoding': 'gzip, deflate, br, zstd',
+        'Accept-Language': 'ko-KR,ko;q=0.9',
+        'Cache-Control': 'max-age=0',
+        'Cookie': 'N_SES=a63b7bc9-e495-4f2b-8f73-a236a4ba68f0; NNB=KPO4DII7AVKGM; VISIT_LOG_CLEAN=1',
+        'Priority': 'u=0, i',
+        'Sec-Ch-Ua': '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
+        'Sec-Ch-Ua-Mobile': '?0',
+        'Sec-Ch-Ua-Platform': '"Windows"',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'same-origin',
+        'Sec-Fetch-User': '?1',
+        'Upgrade-Insecure-Requests': '1',
+        "User-agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+    }
     try:
-        response = requests.get(newsURL, timeout=10)
+        response = requests.get(newsURL, headers=headers, timeout=5)
+        print(response)
     except:
         print('Time out from requests.get(): ', newsURL)
-        return
+        return 
     
     return response.text
 
@@ -80,9 +98,41 @@ def downloadNewsComments(newsURL):
     return comments
 
 
-def downloadUserContent(ID, paramType):
-    comments = []
+#news의 URL을 입력 받아서 comments 메타데이터를 다운로드
+def downloadNewsCommentsMeta(newsURL):
+    oid = newsURL.split('/')[-2]    #채널 ID
+    aid = newsURL.split('/')[-1]    #뉴스 ID
+
+    #첫페이지 받아오기
+    headers = {
+        'Referer': newsURL,
+        "User-agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36"
+    }
+    apiURL = 'https://apis.naver.com/commentBox/cbox/web_naver_list_jsonp.json?ticket=news&templateId=default_economy&pool=cbox5&_cv=20240116144725&_callback=jQuery331023416264284422983_1705575101314&lang=ko&country=KR&objectId=news'+oid+'%2C'+aid+'&categoryId=&pageSize=20&indexSize=10&groupId=&listType=OBJECT&pageType=more&page=1&initialize=true&followSize=5&userType=&useAltSort=true&replyPageSize=20&sort=reply&includeAllStatus=true&_=1705575101316'
+    try:
+        response = requests.get(apiURL, headers=headers, timeout=10)
+    except:
+        print('Time out from requests.get(): ', apiURL)
+        return
+    if response.status_code != 200:
+        return
     
+    #내용을 감싸는 jQuery~함수 부분 제거
+    try:
+        startIdx = response.text.find('{')
+        resDict = json.loads(response.text[startIdx:-2])
+        if resDict['result'] == {}:
+            return None
+    except:
+        return None
+    
+    if 'graph' in resDict['result']:
+        return resDict['result']['graph']
+    else:
+        return None
+
+
+def downloadUserContent(ID, paramType):
     if paramType=='commentID':
         commentID = ID
         apiURL = "https://apis.naver.com/commentBox/cbox/web_naver_user_info_jsonp.json?ticket=news&templateId=view_society_m1&pool=cbox5&_cv=20240311122521&_callback=jQuery331046734403471661223_1710381136305&lang=ko&country=KR&objectId=news001%2C00000123&categoryId=&pageSize=20&indexSize=10&groupId=&listType=user&pageType=more&page=2&commentNo="+str(commentID)+"&targetUserInKey=&includeAllStatus=true&_=1710381136309"
