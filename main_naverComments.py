@@ -29,9 +29,20 @@ def downloadNewsComments_process(newsURL):
     ret = []
     res = downloadNewsComments(newsURL)
     for i in res:
-        ret.append((i['commentNo'], i['parentCommentNo'], i['objectId'], i['userIdNo'], json.dumps(i)))
+        objectId = i['objectId'][4:7] + '_' +  i['objectId'][8:]
+        ret.append((i['commentNo'], i['parentCommentNo'], objectId, i['userIdNo'], json.dumps(i)))
     return ret
-    
+
+
+#comments 메타데이터를 다운로드하기 위한 process
+def downloadNewsCommentsMeta_process(newsURL):
+    res = downloadNewsCommentsMeta(newsURL)
+    oid = newsURL.split('/')[-2]    #채널 ID
+    aid = newsURL.split('/')[-1]    #뉴스 ID
+    objectId = oid + '_' + aid
+    return (objectId, json.dumps(res))
+
+
 
 #user 를 다운로드하기 위한 process
 def downloadUserContents_process(ID):
@@ -61,9 +72,13 @@ def downloadUserComments_process(ID):
         res = downloadUserComments(ID, 'commentID')
     else:
         res = downloadUserComments(ID, 'userID')
+
+    if res == None:
+        return []
     
     for i in res:
-        ret.append((i['commentNo'], i['parentCommentNo'], i['objectId'], i['userIdNo'], json.dumps(i)))
+        objectId = i['objectId'][4:7] + '_' +  i['objectId'][8:]
+        ret.append((i['commentNo'], i['parentCommentNo'], objectId, i['userIdNo'], json.dumps(i)))
     return ret
 
 
@@ -86,18 +101,10 @@ def main():
             newsURLs.append(row[0])
 
     #1. 뉴스 다운로드 후 저장
-    '''
     res = []
     with Pool(processes=number_of_process) as pool:
-        res = list(tqdm.tqdm(pool.imap(downloadNewsContent_process, newsURLs), total=len(newsURLs)))
-    db.insertNews(res)
-    '''
-    res = []
-    for newsURL in newsURLs:
-        oid = newsURL.split('/')[-2]    #채널 ID
-        aid = newsURL.split('/')[-1]    #뉴스 ID
-        objectId = oid + '_' + aid
-        res.append((objectId, ''))
+        #res = list(tqdm.tqdm(pool.imap(downloadNewsContent_process, newsURLs), total=len(newsURLs)))
+        res = list(tqdm.tqdm(pool.imap(downloadNewsCommentsMeta_process, newsURLs), total=len(newsURLs)))
     db.insertNews(res)
 
     print(datetime.now().strftime('[%Y-%m-%d %H:%M:%S]'), end=' ')
@@ -107,10 +114,10 @@ def main():
     res = []
     with Pool(processes=number_of_process) as pool:
         res = list(tqdm.tqdm(pool.imap(downloadNewsComments_process, newsURLs), total=len(newsURLs)))
-        for commentList in res:
-            #commentList = [i for i in commentList if db.searchComment(i[0])==False]
-            db.insertComment(commentList)
-        comments = sum(res, [])
+    for commentList in res:
+        #commentList = [i for i in commentList if db.searchComment(i[0])==False]
+        db.insertComment(commentList)
+    comments = sum(res, [])
 
     print(datetime.now().strftime('[%Y-%m-%d %H:%M:%S]'), end=' ')
     print('Init. {0} comments data are stored in DB.'.format(len(comments)))
@@ -126,7 +133,6 @@ def main():
 
     print(datetime.now().strftime('[%Y-%m-%d %H:%M:%S]'), end=' ')
     print('Init. {0} users are extracted from news comments.'.format(len(users)))
-    
     
     while len(users) > 0:
         print(datetime.now().strftime('[%Y-%m-%d %H:%M:%S]'), end=' ')
@@ -144,41 +150,30 @@ def main():
         
         #1-2. 유저가 작성한 Comments 다운로드
         with Pool(processes=number_of_process) as pool:
-            res = list(tqdm.tqdm(pool.imap(downloadUserComments_process, users.values()), total=len(users.values())))
+            res = list(tqdm.tqdm(pool.imap(downloadUserComments_process, users.values()), total=len(users.values())))   #res 기반으로 가져와야 되나?
         comments = sum(res, [])
 
         print(datetime.now().strftime('[%Y-%m-%d %H:%M:%S]'), end=' ')
-        print('Cycle\t{0}. {1} comments data are stored in DB.'.format(cycle, len(comments)))
+        print('Cycle\t{0}. {1} comments by user are extracted.'.format(cycle, len(comments)))
 
         #2. 뉴스
         #2-1. 댓글에서 뉴스 추출
-        '''
         newsURLs = set()
         for comment in comments:
-            if db.searchNews(comment[2][4:7] + '_' +  comment[2][8:]) == False:  #objectId
-                newsURL = "https://n.news.naver.com/mnews/article/" + comment[2][4:7] + '/' +  comment[2][8:]
+            if db.searchNews(comment[2]) == False:  #objectId
+                newsURL = "https://n.news.naver.com/mnews/article/" + comment[2].replace('_', '/')
                 newsURLs.add(newsURL)
         newsURLs = list(newsURLs)
 
         #2-2. 뉴스 다운로드 후 저장
         res = []
         with Pool(processes=number_of_process) as pool:
-            res = list(tqdm.tqdm(pool.imap(downloadNewsContent_process, newsURLs), total=len(newsURLs)))
+            #res = list(tqdm.tqdm(pool.imap(downloadNewsContent_process, newsURLs), total=len(newsURLs)))
+            res = list(tqdm.tqdm(pool.imap(downloadNewsCommentsMeta_process, newsURLs), total=len(newsURLs)))
         db.insertNews(res)
-        '''
-
-        newsIDs = set()
-        for comment in comments:
-            objectId = comment[2][4:7] + '_' +  comment[2][8:]
-            if db.searchNews(objectId) == False:  #objectId
-                newsIDs.add(objectId)
-        newsIDs = list(newsIDs)
-        newsURLs = ["https://n.news.naver.com/mnews/article/" + newsID.replace('_', '/') for newsID in newsIDs] 
-        newsIDs = [(newsID, '') for newsID in newsIDs]
-        db.insertNews(newsIDs)
 
         print(datetime.now().strftime('[%Y-%m-%d %H:%M:%S]'), end=' ')
-        print('Cycle\t{0}. {1} news data are stored in DB.'.format(cycle, len(newsIDs)))
+        print('Cycle\t{0}. {1} news data(metadata of comments) are stored in DB.'.format(cycle, len(res)))
 
         #2-3. 뉴스의 댓글 다운로드 후 저장
         res = []
@@ -186,7 +181,12 @@ def main():
             res = list(tqdm.tqdm(pool.imap(downloadNewsComments_process, newsURLs), total=len(newsURLs)))
         for commentList in res:
             #commentList = [i for i in commentList if db.searchComment(i[0])==False]
-            db.insertComment(commentList)
+            try:
+                db.insertComment(commentList)
+            except:
+                with open('error_data', 'w+') as file:
+                    file.write('\n'.join([i[3] for i in commentList]))
+            
         comments = sum(res, [])
 
         print(datetime.now().strftime('[%Y-%m-%d %H:%M:%S]'), end=' ')
@@ -227,17 +227,19 @@ def main():
 
 
 def debug():
-    #print(downloadNewsContent('https://n.news.naver.com/mnews/article/056/0011425827'))
-    #print(downloadUserComments(826737275369947268, 'commentID'))
     db = DB()
     db.check()
-    db.deleteAll()
+    #db.deleteAll()
+
+    #print(downloadNewsCommentsMeta('https://n.news.naver.com/article/comment/001/0008419824'))
+    #print(downloadNewsContent('https://n.news.naver.com/mnews/article/056/0011425827'))
+    #print(downloadUserComments(826737275369947268, 'commentID'))
     #print(db.searchNews('056_0011647391'))
     #db.insertNews([('123', 'asdf'), ('456', 'asdfasdf')])
     return
 
 
 if __name__ == '__main__':
-    debug()
+    #debug()
     main()
 

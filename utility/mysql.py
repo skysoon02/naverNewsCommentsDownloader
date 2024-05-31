@@ -11,7 +11,7 @@ class DB:
         query = '''
         CREATE TABLE IF NOT EXISTS newsTable(
             objectId char(20) NOT NULL PRIMARY KEY,
-            content longtext,
+            content JSON,
             ctime timestamp DEFAULT CURRENT_TIMESTAMP
         )'''
         cur.execute(query)
@@ -19,7 +19,7 @@ class DB:
         #userTable
         query = '''
         CREATE TABLE IF NOT EXISTS userTable(
-            userIdNo char(10)  NOT NULL PRIMARY KEY,
+            userIdNo char(40)  NOT NULL PRIMARY KEY,
             userInKey char(20),
             content JSON,
             ctime timestamp DEFAULT CURRENT_TIMESTAMP
@@ -32,7 +32,7 @@ class DB:
             commentNo bigint NOT NULL PRIMARY KEY,
             parentCommentNo bigint,
             objectId char(20),
-            userIdNo char(10),
+            userIdNo char(40),
             content JSON,
             ctime timestamp DEFAULT CURRENT_TIMESTAMP
         )'''
@@ -41,8 +41,8 @@ class DB:
         #followTable
         query = '''
         CREATE TABLE IF NOT EXISTS followTable(
-            followeeIdNo char(10),
-            followerIdNo char(10),
+            followeeIdNo char(40),
+            followerIdNo char(40),
             ctime timestamp DEFAULT CURRENT_TIMESTAMP
         )'''
         cur.execute(query)
