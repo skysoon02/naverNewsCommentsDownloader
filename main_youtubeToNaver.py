@@ -29,7 +29,11 @@ def searchNewsURLs_process(news):
     videoID = news[2]
     if titleFilter(title, channelID)==True:
         beautifiedTitle = titleBeautifier(title)
-        return searchParticularNews(beautifiedTitle, channelID, videoID)
+        try :
+            return searchParticularNews(beautifiedTitle, channelID, videoID)
+        except:
+            print(Exception)
+            return None
     return None
 
 
@@ -96,5 +100,5 @@ def debug():
 
 
 if __name__ == '__main__':
-    #main()
-    debug()
+    main()
+    #debug()
